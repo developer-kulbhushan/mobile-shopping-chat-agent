@@ -1,10 +1,12 @@
-# Phone Assistant Chatbot
+# Mobile Shopping Assistant Chatbot
 
 This project is a production-grade chatbot designed to assist users with phone recommendations and answer their queries. It features a user-friendly interface and a robust backend powered by modern technologies.
 
 ## Motivation
 
 The primary motivation behind this project is to create a reliable and intelligent chatbot that can provide accurate and helpful information about mobile phones. In a market flooded with numerous options, this chatbot aims to simplify the decision-making process for users by offering personalized recommendations based on their needs and preferences.
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Netlify-blue?style=for-the-badge&logo=netlify)](https://mobile-shopping-chat-assistant.vercel.app/)
 
 ## Tech Stack and Architecture
 
@@ -225,4 +227,3 @@ The chatbot's effectiveness and safety are paramount. We have implemented the fo
 ## Known Limitations
 
 - **Limited Knowledge Base:** The chatbot's knowledge is limited to the data it was trained on. It may not be able to answer queries about very new or niche phone models.
-- **Potential for Inaccuracies:** While we strive for accuracy, the chatbot may occasionally provide incorrect information. We are continuously working to improve its knowledge base and accuracy.
