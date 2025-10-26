@@ -3,6 +3,7 @@ import type { Message, PhoneDetails, ComparisonData } from '../types/api.types';
 import { PhoneDetailCard } from './PhoneDetailCard';
 import { PhoneComparison } from './PhoneComparison';
 import { PhoneList } from './PhoneList';
+import ReactMarkdown from 'react-markdown';
 
 interface ChatMessageProps {
   message: Message;
@@ -63,7 +64,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
       <div className="flex-1 max-w-[85%]">
         <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 shadow-md">
           <p className="text-sm leading-relaxed text-gray-900 whitespace-pre-wrap">
-            {message.content}
+            <ReactMarkdown>
+              {message.content}
+            </ReactMarkdown>
           </p>
         </div>
         {renderContextData()}

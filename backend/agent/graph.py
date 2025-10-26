@@ -102,6 +102,8 @@ def handle_search_recommendation_intent(state: AgentState) -> AgentState:
     """Handle search/recommendation intent with tool data"""
     system_prompt = SystemMessage(content=SEARCH_RECOMMENDATION_INTENT_PROMPT)
     response = string_response_model.invoke([system_prompt] + state["messages"])
+
+    print(f"Response content: {response.content}")
     last_message: ToolMessage = state["messages"][-1]
     output_data = json.loads(last_message.content)
     if isinstance(output_data, dict) and "error" in output_data:
@@ -132,7 +134,12 @@ def prepare_tool_call(state: AgentState) -> AgentState:
     """Prepare tool call based on user intent"""
     system_prompt = SystemMessage(content=TOOL_SELECTION_PROMPT)
     response = tool_selection_model.invoke([system_prompt] + state["messages"])
-    return {"messages": [response], "response": response.content, "context_data": None}
+    response_message = None
+    if not response.tool_calls:
+        response_message = response.content[0]['text']
+    else:
+        response_message = response.content
+    return {"messages": [response], "response": response_message, "context_data": None}
 
 
 def handle_simple_intent(state: AgentState) -> AgentState:

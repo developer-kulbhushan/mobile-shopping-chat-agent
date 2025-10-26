@@ -62,13 +62,13 @@ def fetch_phone_details(phone_name: str) -> Optional[Dict]:
 
 
 @tool
-def fetch_recommendations(criteria: Dict[str, Any]) -> Optional[Dict]:
+def fetch_recommendations(criteria: Dict[str, Any], limit: int = 5) -> Optional[Dict]:
     """
     Fetch phone recommendations based on given criteria from Supabase.
 
     Args:
         criteria (dict): A dictionary of criteria to filter phones.
-
+        limit (int): Number of recommendations to return. Default is 5.
     Returns:
         list or dict: List of recommended phones, or error message.
     """
@@ -125,7 +125,7 @@ def fetch_recommendations(criteria: Dict[str, Any]) -> Optional[Dict]:
             else:
                 query = query.eq(key, value)
 
-        response = query.limit(5).execute()
+        response = query.limit(limit).execute()
 
         if not response.data or len(response.data) == 0:
             return {"error": "No recommendations found based on the given criteria."}

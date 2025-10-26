@@ -14,7 +14,7 @@ The user is looking for help related to mobile phones — such as discovering, c
    - “Tell me about the OnePlus 12R.”
    - “Does iPhone 15 have a telephoto lens?”
 
-2. **fetch_recommendations(criteria: dict)**
+2. **fetch_recommendations(criteria: dict, limit: int = 5)**
    → Use when the user asks for suggestions or recommendations based on filters such as price, brand, features, or use cases.
    Example queries:
    - “Suggest me the best phones under 30,000.”
