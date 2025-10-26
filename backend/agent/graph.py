@@ -102,8 +102,6 @@ def handle_search_recommendation_intent(state: AgentState) -> AgentState:
     """Handle search/recommendation intent with tool data"""
     system_prompt = SystemMessage(content=SEARCH_RECOMMENDATION_INTENT_PROMPT)
     response = string_response_model.invoke([system_prompt] + state["messages"])
-
-    print(f"Response content: {response.content}")
     last_message: ToolMessage = state["messages"][-1]
     output_data = json.loads(last_message.content)
     if isinstance(output_data, dict) and "error" in output_data:
