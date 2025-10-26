@@ -1,6 +1,6 @@
-# Mobile Shopping Assistant Chatbot
+# Phone Assistant Chatbot
 
-This project is a production-grade chatbot designed to assist users with phone recommendations and answer their queries. It features a user-friendly interface and a robust backend powered by modern AI technologies.
+This project is a production-grade chatbot designed to assist users with phone recommendations and answer their queries. It features a user-friendly interface and a robust backend powered by modern technologies.
 
 ## Motivation
 
@@ -90,6 +90,73 @@ graph TD
 - **Real-time Responses:** Receive instant responses to your queries, ensuring a seamless user experience.
 - **User-Friendly Interface:** The intuitive and responsive design makes it easy to interact with the chatbot.
 
+## Project Structure
+
+```
+.
+├── backend
+│   ├── agent
+│   │   ├── models
+│   │   ├── prompts
+│   │   ├── tools
+│   │   ├── graph.py
+│   │   └── state.py
+│   ├── api
+│   │   ├── models.py
+│   │   └── routes.py
+│   ├── core
+│   ├── .gitignore
+│   ├── main.py
+│   ├── requirements.txt
+│   └── vercel.json
+└── frontend
+    ├── src
+    ├── .gitignore
+    ├── eslint.config.js
+    ├── index.html
+    ├── package.json
+    ├── postcss.config.js
+    ├── tailwind.config.js
+    ├── tsconfig.json
+    └── vite.config.ts
+```
+
+## API Endpoints
+
+### POST /api/v1/chat
+
+Processes a chat message and returns the AI's response.
+
+**Request Body:**
+
+- `message` (string, required): The user's message.
+- `session_id` (string, optional): The session ID for conversation continuity.
+
+**Response Body:**
+
+- `session_id` (string): The session ID for the conversation.
+- `intent` (string): The classified intent of the message.
+- `response` (string): The AI's response.
+- `context_data` (object): Additional context data.
+- `timestamp` (string): The response timestamp.
+
+### POST /api/v1/sessions/new
+
+Creates a new chat session.
+
+**Response Body:**
+
+- `session_id` (string): The new session ID.
+- `message` (string): A success message.
+
+### DELETE /api/v1/sessions/{session_id}
+
+Deletes a chat session.
+
+### GET /api/v1/sessions/{session_id}/history
+
+Retrieves the conversation history for a session.
+
 ## Setup and Installation
 
 ### Prerequisites
@@ -161,3 +228,4 @@ The chatbot's effectiveness and safety are paramount. We have implemented the fo
 ## Known Limitations
 
 - **Limited Knowledge Base:** The chatbot's knowledge is limited to the data it was trained on. It may not be able to answer queries about very new or niche phone models.
+- **Potential for Inaccuracies:** While we strive for accuracy, the chatbot may occasionally provide incorrect information. We are continuously working to improve its knowledge base and accuracy.
