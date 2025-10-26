@@ -25,6 +25,22 @@ The primary motivation behind this project is to create a reliable and intellige
 - **API:** RESTful API with Pydantic models
 - **Server:** Uvicorn
 
+### Architecture Overview
+
+The application is designed with a decoupled frontend and backend architecture:
+
+1.  **Frontend:** The user interacts with a React-based single-page application (SPA). All user input is captured here and sent to the backend via REST API calls.
+
+2.  **Backend:** The FastAPI backend serves as the core of the application. It receives requests from the frontend, processes them, and returns the appropriate responses. It is responsible for:
+    *   **Authentication:** Managing user authentication and authorization.
+    *   **Business Logic:** Implementing the core logic of the chatbot.
+    *   **AI/ML Integration:** Interacting with LangChain and Google Generative AI to generate chatbot responses.
+    *   **Database Interaction:** Storing and retrieving data from the Supabase database.
+
+3.  **Supabase:** Supabase is used as the database to store chat history and other relevant data.
+
+4.  **Google Generative AI:** This is the AI model that powers the chatbot's responses. The backend sends prompts to this model and receives the generated text.
+
 ## Features
 
 - **Personalized Recommendations:** Get phone recommendations based on your specific needs and preferences.
@@ -69,6 +85,28 @@ GOOGLE_API_KEY="your-google-api-key"
 SUPABASE_URL="your-supabase-url"
 SUPABASE_KEY="your-supabase-key"
 ```
+
+Create a `.env` file in the `frontend` directory and add the following:
+
+```
+VITE_API_BASE_URL="http://localhost:8000/api/v1"
+```
+
+### Running the Application
+
+1.  **Backend:**
+    Navigate to the `backend` directory and run the following command to start the development server:
+    ```bash
+    uvicorn main:app --reload
+    ```
+    The backend will be available at `http://localhost:8000`.
+
+2.  **Frontend:**
+    Navigate to the `frontend` directory and run the following command to start the development server:
+    ```bash
+    npm run dev
+    ```
+    The frontend will be available at `http://localhost:5173`.
 
 ## Prompt Design and Safety
 
