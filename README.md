@@ -94,30 +94,27 @@ graph TD
 
 ```
 .
-├── backend
-│   ├── agent
-│   │   ├── models
-│   │   ├── prompts
-│   │   ├── tools
-│   │   ├── graph.py
-│   │   └── state.py
-│   ├── api
-│   │   ├── models.py
-│   │   └── routes.py
-│   ├── core
-│   ├── .gitignore
-│   ├── main.py
-│   ├── requirements.txt
-│   └── vercel.json
-└── frontend
-    ├── src
-    ├── .gitignore
-    ├── eslint.config.js
+├── backend/            # Python/FastAPI backend
+│   ├── agent/          # Core LangGraph agent logic
+│   │   ├── graph.py    # Defines the LangGraph state graph
+│   │   ├── state.py    # Defines the AgentState
+│   │   └── tools/      # Tools for the agent to use (e.g., database access)
+│   ├── api/            # FastAPI routes and models
+│   │   ├── routes.py   # API endpoint definitions
+│   │   └── models.py   # Pydantic models for request/response
+│   ├── core/           # Core application logic
+│   │   ├── config.py   # Configuration settings
+│   │   └── session_manager.py # Manages user chat sessions
+│   ├── main.py         # FastAPI application entry point
+│   └── requirements.txt
+└── frontend/           # React/TypeScript frontend
+    ├── src/
+    │   ├── App.tsx     # Main application component
+    │   ├── components/ # Reusable UI components
+    │   ├── services/   # API communication layer
+    │   └── config/     # Frontend configuration
     ├── index.html
     ├── package.json
-    ├── postcss.config.js
-    ├── tailwind.config.js
-    ├── tsconfig.json
     └── vite.config.ts
 ```
 
