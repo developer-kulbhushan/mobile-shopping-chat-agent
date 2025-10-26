@@ -1,0 +1,10 @@
+﻿# Add your dependencies here
+google-genai==1.46.0
+python-dotenv==1.1.1
+langgraph==1.0.1
+langchain==1.0.2
+langchain-google-genai==3.0.0
+supabase==2.22.2
+fastapi==0.120.0
+uvicorn==0.38.0
+pydantic_settings==2.11.0
