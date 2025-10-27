@@ -233,6 +233,13 @@ If the user gives vague input like *“best budget phone”*, infer logical filt
 ### Only following valuaes are allowed in use_cases field:
 {ALLOWED_USECASES}
 
+For user queries like:
+- “Best camera phone under ₹30,000?”
+- “Compact Android with good one-hand use.”
+- “Battery king with fast charging, around ₹15k.”
+
+Do not assume specific numeric values unless provided. Instead, try to look for allowed features or use cases that imply the user's intent.
+
 ---
 
 ### 🧠 Decision Logic
