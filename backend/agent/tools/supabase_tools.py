@@ -63,17 +63,14 @@ def fetch_phone_details(phone_name: str) -> Optional[Dict]:
 
 
 @tool
-def fetch_recommendations(criteria: Dict[str, Any], limit: int = 5) -> Union[List[Dict[str, Any]], Dict[str, str]]:
+def fetch_recommendations(
+    criteria: Dict[str, Any], limit: int = 5
+) -> Union[List[Dict[str, Any]], Dict[str, str]]:
     """
     Fetch phone recommendations from Supabase based on given criteria.
-
-    Args:
-        criteria (dict): Filters for phone attributes (brand, price, features, etc.).
-        limit (int): Maximum number of recommendations to return (default = 5).
-
-    Returns:
-        list[dict]: Matching phone records.
-        dict: Error message if query fails or returns no results.
+    - Uses 'ilike' for text partial match.
+    - Uses 'cs' for JSONB containment.
+    - Combines 'features' and 'use_cases' via OR if both present.
     """
     try:
         query = supabase.table("phones").select("*")
@@ -99,51 +96,47 @@ def fetch_recommendations(criteria: Dict[str, Any], limit: int = 5) -> Union[Lis
             "released_year",
         }
 
-        INT_FIELDS = {
-            "price",
-            "refresh_rate",
-            "ram_gb",
-            "storage_gb",
-            "battery_mah",
-            "charging_speed_w",
-            "rear_camera_mp",
-            "front_camera_mp",
-            "released_year",
+        TEXT_FIELDS = {
+            "brand",
+            "os",
+            "display_type",
+            "processor",
+            "network",
+            "camera_features",
         }
-
         FLOAT_FIELDS = {"display_size_inch"}
+        JSONB_FIELDS = {"features", "use_cases"}
+
+        feature_filter = None
+        usecase_filter = None
 
         for key, value in criteria.items():
             if key not in VALID_KEYS:
                 continue
 
-            # Handle JSONB lists (features, use_cases)
-            if isinstance(value, list):
-                query = query.filter(key, "cs", json.dumps(value))
+            # Handle JSONB list filters (contains)
+            if key in JSONB_FIELDS:
+                # Ensure value is a list, even if user gives a single string
+                if isinstance(value, str):
+                    value = [value]
+                if key == "features":
+                    feature_filter = f"{key}=cs.{json.dumps(value)}"
+                elif key == "use_cases":
+                    usecase_filter = f"{key}=cs.{json.dumps(value)}"
+                else:
+                    query = query.filter(key, "cs", json.dumps(value))
                 continue
 
-            # Handle combined range filters: ">=25000,<=30000"
-            if isinstance(value, str) and "," in value and any(op in value for op in [">", "<"]):
-                parts = [v.strip() for v in value.split(",") if v.strip()]
-                for part in parts:
-                    match = re.match(r"^(<=|>=|<|>)\s*(\d+(\.\d+)?)$", part)
-                    if match:
-                        op, num_str = match.groups()[0], match.groups()[1]
-                        num_value = float(num_str) if key in FLOAT_FIELDS else int(float(num_str))
-                        if op == "<=":
-                            query = query.lte(key, num_value)
-                        elif op == ">=":
-                            query = query.gte(key, num_value)
-                        elif op == "<":
-                            query = query.lt(key, num_value)
-                        elif op == ">":
-                            query = query.gt(key, num_value)
-                continue
-
-            # Handle single comparisons (<=, >=, <, >)
-            if isinstance(value, str) and re.match(r"^(<=|>=|<|>)\s*\d+(\.\d+)?$", value.strip()):
-                op, num_str = re.match(r"^(<=|>=|<|>)\s*(\d+(\.\d+)?)$", value.strip()).groups()[0:2]
-                num_value = float(num_str) if key in FLOAT_FIELDS else int(float(num_str))
+            # Handle numeric comparisons (<=, >=, <, >)
+            if isinstance(value, str) and re.match(
+                r"^(<=|>=|<|>)\s*\d+(\.\d+)?$", value.strip()
+            ):
+                op, num_str = re.match(
+                    r"^(<=|>=|<|>)\s*(\d+(\.\d+)?)$", value.strip()
+                ).groups()[0:2]
+                num_value = (
+                    float(num_str) if key in FLOAT_FIELDS else int(float(num_str))
+                )
                 if op == "<=":
                     query = query.lte(key, num_value)
                 elif op == ">=":
@@ -154,22 +147,33 @@ def fetch_recommendations(criteria: Dict[str, Any], limit: int = 5) -> Union[Lis
                     query = query.gt(key, num_value)
                 continue
 
-            # Handle exact matches
+            # Handle case-insensitive "contains" text match
+            if isinstance(value, str) and key in TEXT_FIELDS:
+                query = query.ilike(key, f"%{value.lower()}%")
+                continue
+
+            # Default equality
             query = query.eq(key, value)
 
-        # Order by popularity and rating
-        query = query.order("popularity_score", desc=True).order("rating", desc=True)
+        # Apply OR between features & use_cases
+        if feature_filter and usecase_filter:
+            query = query.or_(f"({feature_filter},{usecase_filter})")
+        elif feature_filter:
+            query = query.filter("features", "cs", json.dumps(criteria["features"]))
+        elif usecase_filter:
+            query = query.filter("use_cases", "cs", json.dumps(criteria["use_cases"]))
 
+        # Order & execute
+        query = query.order("popularity_score", desc=True).order("rating", desc=True)
         response = query.limit(limit).execute()
 
-        if not response.data or len(response.data) == 0:
+        if not response.data:
             return {"error": "No recommendations found based on the given criteria."}
 
         return response.data
 
     except Exception as e:
         return {"error": f"Error fetching recommendations: {str(e)}"}
-
 
 
 @tool
