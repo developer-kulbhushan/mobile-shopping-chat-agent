@@ -1,10 +1,11 @@
 import os
 from supabase import create_client, Client
-from typing import Optional, Dict, Any
+from typing import Any, Dict, List, Union, Optional
 from langchain_core.tools import tool
 from agent.models.phone_details_table_schema import Phone
 import re
 from core.config import settings
+import json
 
 
 SUPABASE_URL = settings.SUPABASE_URL
@@ -62,68 +63,102 @@ def fetch_phone_details(phone_name: str) -> Optional[Dict]:
 
 
 @tool
-def fetch_recommendations(criteria: Dict[str, Any], limit: int = 5) -> Optional[Dict]:
+def fetch_recommendations(criteria: Dict[str, Any], limit: int = 5) -> Union[List[Dict[str, Any]], Dict[str, str]]:
     """
-    Fetch phone recommendations based on given criteria from Supabase.
+    Fetch phone recommendations from Supabase based on given criteria.
 
     Args:
-        criteria (dict): A dictionary of criteria to filter phones.
-        limit (int): Number of recommendations to return. Default is 5.
+        criteria (dict): Filters for phone attributes (brand, price, features, etc.).
+        limit (int): Maximum number of recommendations to return (default = 5).
+
     Returns:
-        list or dict: List of recommended phones, or error message.
+        list[dict]: Matching phone records.
+        dict: Error message if query fails or returns no results.
     """
     try:
         query = supabase.table("phones").select("*")
 
-        # Apply filters based on criteria
+        VALID_KEYS = {
+            "brand",
+            "price",
+            "os",
+            "display_size_inch",
+            "display_type",
+            "refresh_rate",
+            "processor",
+            "ram_gb",
+            "storage_gb",
+            "battery_mah",
+            "charging_speed_w",
+            "rear_camera_mp",
+            "front_camera_mp",
+            "camera_features",
+            "network",
+            "features",
+            "use_cases",
+            "released_year",
+        }
+
+        INT_FIELDS = {
+            "price",
+            "refresh_rate",
+            "ram_gb",
+            "storage_gb",
+            "battery_mah",
+            "charging_speed_w",
+            "rear_camera_mp",
+            "front_camera_mp",
+            "released_year",
+        }
+
+        FLOAT_FIELDS = {"display_size_inch"}
+
         for key, value in criteria.items():
-            # Skip invalid keys
-            if key not in {
-                "brand",
-                "price",
-                "os",
-                "display_size_inch",
-                "display_type",
-                "refresh_rate",
-                "processor",
-                "ram_gb",
-                "storage_gb",
-                "battery_mah",
-                "charging_speed_w",
-                "rear_camera_mp",
-                "front_camera_mp",
-                "camera_features",
-                "network",
-                "features",
-                "use_cases",
-                "released_year",
-            }:
+            if key not in VALID_KEYS:
                 continue
 
-            # Handle lists (e.g., features/use_cases)
+            # Handle JSONB lists (features, use_cases)
             if isinstance(value, list):
-                query = query.contains(key, value)
+                query = query.filter(key, "cs", json.dumps(value))
+                continue
 
-            # Handle comparison filters (<=, >=, <, >)
-            elif isinstance(value, str) and re.match(
-                r"^(<=|>=|<|>)\s*\d+$", value.strip()
-            ):
-                match = re.match(r"^(<=|>=|<|>)\s*(\d+)$", value.strip())
-                if match:
-                    operator, num_value = match.groups()
-                    num_value = int(num_value)
-                    if operator == "<=":
-                        query = query.lte(key, num_value)
-                    elif operator == ">=":
-                        query = query.gte(key, num_value)
-                    elif operator == "<":
-                        query = query.lt(key, num_value)
-                    elif operator == ">":
-                        query = query.gt(key, num_value)
+            # Handle combined range filters: ">=25000,<=30000"
+            if isinstance(value, str) and "," in value and any(op in value for op in [">", "<"]):
+                parts = [v.strip() for v in value.split(",") if v.strip()]
+                for part in parts:
+                    match = re.match(r"^(<=|>=|<|>)\s*(\d+(\.\d+)?)$", part)
+                    if match:
+                        op, num_str = match.groups()[0], match.groups()[1]
+                        num_value = float(num_str) if key in FLOAT_FIELDS else int(float(num_str))
+                        if op == "<=":
+                            query = query.lte(key, num_value)
+                        elif op == ">=":
+                            query = query.gte(key, num_value)
+                        elif op == "<":
+                            query = query.lt(key, num_value)
+                        elif op == ">":
+                            query = query.gt(key, num_value)
+                continue
 
-            # Handle exact match
-            else:
-                query = query.eq(key, value)
+            # Handle single comparisons (<=, >=, <, >)
+            if isinstance(value, str) and re.match(r"^(<=|>=|<|>)\s*\d+(\.\d+)?$", value.strip()):
+                op, num_str = re.match(r"^(<=|>=|<|>)\s*(\d+(\.\d+)?)$", value.strip()).groups()[0:2]
+                num_value = float(num_str) if key in FLOAT_FIELDS else int(float(num_str))
+                if op == "<=":
+                    query = query.lte(key, num_value)
+                elif op == ">=":
+                    query = query.gte(key, num_value)
+                elif op == "<":
+                    query = query.lt(key, num_value)
+                elif op == ">":
+                    query = query.gt(key, num_value)
+                continue
+
+            # Handle exact matches
+            query = query.eq(key, value)
+
+        # Order by popularity and rating
+        query = query.order("popularity_score", desc=True).order("rating", desc=True)
 
         response = query.limit(limit).execute()
 
@@ -134,6 +169,7 @@ def fetch_recommendations(criteria: Dict[str, Any], limit: int = 5) -> Optional[
 
     except Exception as e:
         return {"error": f"Error fetching recommendations: {str(e)}"}
+
 
 
 @tool
