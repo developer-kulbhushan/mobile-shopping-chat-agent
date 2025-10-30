@@ -6,7 +6,7 @@ from agent.models.phone_details_table_schema import Phone
 import re
 from core.config import settings
 import json
-from db.schema import get_supabase_client
+from core.supabase_client import get_supabase_client
 
 
 supabase: Client = get_supabase_client()
