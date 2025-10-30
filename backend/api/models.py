@@ -4,7 +4,7 @@ from typing import Optional, Any
 
 class ChatRequest(BaseModel):
     """Request model for chat endpoint"""
-    message: str = Field(..., min_length=1, max_length=2000, description="User message")
+    message: str = Field(..., min_length=1, max_length=1000000, description="User message")
     session_id: Optional[str] = Field(None, description="Session ID for conversation continuity")
 
 
