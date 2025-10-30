@@ -1,8 +1,12 @@
 import logging
 from typing import Dict, Any, Optional
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from core.supabase_client import get_supabase_client
+from agent.models.log_entry import LogEntry
 
 logger = logging.getLogger(__name__)
+IST = ZoneInfo("Asia/Kolkata")
 
 class LogService:
     """A service for logging chat session events to Supabase."""
@@ -21,28 +25,26 @@ class LogService:
         metadata: Optional[Dict[str, Any]] = None,
     ):
         """
-        Logs an event to the Supabase 'logs' table.
-
-        Args:
-            session_id: The ID of the session.
-            event_type: The type of event (e.g., 'new_session', 'message', 'error').
-            user_message: The user's message.
-            bot_response: The bot's response.
-            intent: The classified intent of the message.
-            error_details: Details of any error that occurred.
-            metadata: Any other relevant data.
+        Logs an event to the Supabase 'logs' table after validating it
+        against the LogEntry model and converting the timestamp to IST.
         """
         try:
-            log_entry = {
-                "session_id": session_id,
-                "event_type": event_type,
-                "user_message": user_message,
-                "bot_response": bot_response,
-                "intent": intent,
-                "error_details": error_details,
-                "metadata": metadata,
-            }
-            self.supabase.table("logs").insert(log_entry).execute()
+            # Create a LogEntry instance to validate the data
+            log_entry = LogEntry(
+                session_id=session_id,
+                event_type=event_type,
+                timestamp=datetime.now(IST),
+                user_message=user_message,
+                bot_response=bot_response,
+                intent=intent,
+                error_details=error_details,
+                metadata=metadata,
+            )
+
+            # Convert the Pydantic model to a dictionary for Supabase
+            log_dict = log_entry.model_dump(exclude_none=True)
+
+            self.supabase.table("logs").insert(log_dict).execute()
         except Exception as e:
             logger.error(f"Failed to log event to Supabase: {e}", exc_info=True)
 

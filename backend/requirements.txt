@@ -8,3 +8,4 @@ supabase==2.22.2
 fastapi==0.120.0
 uvicorn==0.38.0
 pydantic_settings==2.11.0
+tzdata==2024.1
