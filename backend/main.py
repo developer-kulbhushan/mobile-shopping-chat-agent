@@ -9,6 +9,7 @@ import logging
 
 from api.routes import router
 from core.config import settings
+from db.schema import create_logs_table_if_not_exists
 
 # Configure logging
 logging.basicConfig(
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Lifespan event handler for startup and shutdown"""
     logger.info("Starting up the application...")
+    create_logs_table_if_not_exists()
     yield
     logger.info("Shutting down the application...")
 

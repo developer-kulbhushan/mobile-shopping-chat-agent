@@ -5,6 +5,7 @@ import logging
 from api.models import ChatRequest, ChatResponse, NewSessionResponse, ErrorResponse
 from core.session_manager import session_manager
 from agent.graph import process_message
+from core.log_service import log_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -26,37 +27,41 @@ async def chat(request: ChatRequest):
     - **message**: User's message text
     - **session_id**: Optional session ID for conversation continuity
     """
+    session_id = request.session_id
     try:
-        # Create new session if not provided
-        if not request.session_id:
+        if not session_id:
             session_id = session_manager.create_session()
+            log_service.log_event(session_id, "new_session")
             logger.info(f"Created new session: {session_id}")
         else:
-            session_id = request.session_id
             session = session_manager.get_session(session_id)
             if not session:
+                log_service.log_event(session_id, "error", error_details="Session not found or expired")
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Session not found or expired. Please create a new session."
                 )
-        
-        # Get session data
+
         session = session_manager.get_session(session_id)
-        if not session:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Session not found"
-            )
         
-        # Process the message through the agent
+        log_service.log_event(session_id, "message", user_message=request.message)
+
         result = await process_message(
             message=request.message,
             conversation_history=session["messages"]
         )
         
-        # Update session with new messages
         session_manager.update_session(session_id, result["messages"])
         
+        log_service.log_event(
+            session_id,
+            "response",
+            user_message=request.message,
+            bot_response=result.get("response", ""),
+            intent=result.get("intent"),
+            metadata={"context_data": result.get("context_data")}
+        )
+
         logger.info(f"Processed message for session {session_id}, intent: {result.get('intent')}")
         
         return ChatResponse(
@@ -67,9 +72,13 @@ async def chat(request: ChatRequest):
             timestamp=datetime.now().isoformat()
         )
     
-    except HTTPException:
+    except HTTPException as he:
+        # Log HTTP exceptions specifically
+        log_service.log_event(session_id or "unknown", "error", error_details=str(he.detail))
         raise
     except Exception as e:
+        # Log general exceptions
+        log_service.log_event(session_id or "unknown", "error", error_details=str(e))
         logger.error(f"Error processing chat message: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -86,6 +95,7 @@ async def create_new_session():
     """Create a new chat session"""
     try:
         session_id = session_manager.create_session()
+        log_service.log_event(session_id, "new_session")
         logger.info(f"Created new session via endpoint: {session_id}")
         return NewSessionResponse(
             session_id=session_id,
@@ -93,6 +103,8 @@ async def create_new_session():
         )
     except Exception as e:
         logger.error(f"Error creating session: {e}", exc_info=True)
+        # Optionally log error to Supabase as well
+        log_service.log_event("unknown", "error", error_details=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error creating session"
