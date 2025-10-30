@@ -44,6 +44,9 @@ class LogService:
             # Convert the Pydantic model to a dictionary for Supabase
             log_dict = log_entry.model_dump(exclude_none=True)
 
+            # Convert datetime to ISO 8601 string format
+            log_dict['timestamp'] = log_entry.timestamp.isoformat()
+
             self.supabase.table("logs").insert(log_dict).execute()
         except Exception as e:
             logger.error(f"Failed to log event to Supabase: {e}", exc_info=True)
