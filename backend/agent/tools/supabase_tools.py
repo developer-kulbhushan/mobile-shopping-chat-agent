@@ -1,16 +1,15 @@
 import os
-from supabase import create_client, Client
+from supabase import Client
 from typing import Any, Dict, List, Union, Optional
 from langchain_core.tools import tool
 from agent.models.phone_details_table_schema import Phone
 import re
 from core.config import settings
 import json
+from core.supabase_client import get_supabase_client
 
 
-SUPABASE_URL = settings.SUPABASE_URL
-SUPABASE_KEY = settings.SUPABASE_KEY
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase: Client = get_supabase_client()
 
 
 def fetch_single_phone_details(phone_name: str) -> Optional[Dict]:
